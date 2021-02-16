@@ -152,7 +152,7 @@ class CPU:
             "A": lambda: self.reg.A,  # contents of A
             "IMM": lambda: self.next_word(),  # next word as literal
             "REL": lambda: self.next_word() - 128,  # next word as signed integer
-            "ABS": lambda: self.ram.get(self.next_two()),  # get next 16 bits as address
+            "ABS": lambda: self.next_two(),  # get next 16 bits as address
             "ZP": lambda: self.ram.get(self.next_word()),  # get next 8 bits as address for zeroth memory page
             "ABS_X": lambda: self.ram.get((self.next_two() + self.reg.X) & 0xffff),  # as with ABS but add X to address
             "ABS_Y": lambda: self.ram.get((self.next_two() + self.reg.Y) & 0xffff),  # as with ABS but add Y to address
@@ -460,7 +460,7 @@ class CPU:
         return word
 
     def next_two(self):  # like next_word except gets two words as a 16-bit value
-        return (self.next_word() << 8) | self.next_word()
+        return self.next_word() | ( self.next_word() << 8 )
 
     def push(self, value):
         self.ram.set(self.reg.SP, value)
@@ -1075,5 +1075,5 @@ class CPU:
         raise NotImplementedError()
 
 if __name__ == '__main__':
-    cpu = CPU(initial_ram=b"\xA2\x0F\x8A\x69\x30\xA9\x8D\xE8\xE0\x0A\xF0\x03\x4C\x02\x00")
+    cpu = CPU(initial_ram=b"\xA2\x00\xE8\xE0\x0A\xF0\x03\x4C\x02\x00")
     cpu.run(0)
