@@ -173,6 +173,16 @@ def test_next_word():
     assert cpu.reg.PC == 0x0003
 
 
+def test_next_two():
+    cpu = c64.CPU(initial_ram=[0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0xff])
+    cpu.reg.PC = 0x0002
+    assert cpu.next_two() == 0x0302
+    assert cpu.next_two() == 0x0504
+    cpu.reg.PC = 0x000
+    assert cpu.next_two() == 0x0100
+    assert cpu.next_two() == 0x0302
+
+
 def test_bcd():
     assert c64.bcd(0x43) == 43
     assert c64.bcd(0x12) == 12
