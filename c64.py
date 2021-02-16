@@ -483,6 +483,15 @@ class CPU():
             self.reg.C = result > 0xff
         self.reg.A = result
 
+    def AHX(self):
+        raise NotImplementedError()
+
+    def ALR(self):
+        raise NotImplementedError()
+
+    def ANC(self):
+        raise NotImplementedError()
+
     def AND(self, value):
         """Bitwise AND A with value
 
@@ -491,6 +500,9 @@ class CPU():
         self.reg.A = self.reg.A & value
         self.reg.Z = self.reg.A == 0
         self.reg.N = self.reg.A >> 7
+
+    def ARR(self):
+        raise NotImplementedError()
 
     def ASL(self, value):
         """Arithmetic shift left
@@ -509,6 +521,9 @@ class CPU():
         self.reg.N = result >> 7
         self.reg.Z = result == 0
         return result
+
+    def AXS(self):
+        raise NotImplementedError()
 
     def BCC(self, value):
         """Branch (add value to PC) iff reg.C is 0
@@ -686,6 +701,9 @@ class CPU():
         """
         self._compare(value, 'Y')
 
+    def DCP(self):
+        raise NotImplementedError()
+
     def DEC(self, value):
         """Decrement value by one and return
 
@@ -753,6 +771,9 @@ class CPU():
         """
         self._dec_or_inc_register('Y', increment=True)
 
+    def ISC(self):
+        raise NotImplementedError()
+
     def JMP(self, value):
         """GOTO address (set PC)"""
         self.reg.PC = value
@@ -772,6 +793,12 @@ class CPU():
         setattr(self.reg, target, value)
         self.reg.N = value >> 7
         self.reg.Z = value == 0
+
+    def LAS(self):
+        raise NotImplementedError()
+
+    def LAX(self):
+        raise NotImplementedError()
 
     def LDA(self, value):
         """Load A with value
@@ -847,6 +874,9 @@ class CPU():
         """Pops from the stack to P."""
         self.reg.P = self.pop()
 
+    def RLA(self):
+        raise NotImplementedError()
+
     def ROL(self, value):
         """Rotate bits left, with carry.
 
@@ -858,6 +888,9 @@ class CPU():
         self.reg.N = result >> 7
         self.reg.Z = result == 0
         return result
+
+    def RRA(self):
+        raise NotImplementedError()
 
     def ROR(self, value):
         """Rotate bits right, with carry.
@@ -888,6 +921,9 @@ class CPU():
         self.reg.PCL = self.pop()
         self.reg.PCH = self.pop()
         self.reg.PC += 1
+
+    def SAX(self):
+        raise NotImplementedError()
 
     def SBC(self, value):
         """Subtract value from A with borrow.
@@ -934,6 +970,15 @@ class CPU():
         """
         self.reg.I = 1
 
+    def SHX(self):
+        raise NotImplementedError()
+
+    def SHY(self):
+        raise NotImplementedError()
+
+    def SRE(self):
+        raise NotImplementedError()
+
     def STA(self, *_):
         """return A"""
         return self.reg.A
@@ -945,6 +990,9 @@ class CPU():
     def STY(self, *_):
         """return Y"""
         return self.reg.Y
+
+    def TAS(self):
+        raise NotImplementedError()
 
     def TAX(self, *_):
         """Transfer A to X"""
@@ -985,3 +1033,6 @@ class CPU():
         self.reg.A = self.reg.Y
         self.reg.N = self.reg.A << 7
         self.reg.Z = self.reg.A == 0
+
+    def XAA(self):
+        raise NotImplementedError()
