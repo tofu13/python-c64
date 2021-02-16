@@ -151,7 +151,7 @@ class CPU:
             None: lambda: None,
             "A": lambda: self.reg.A,  # contents of A
             "IMM": lambda: self.next_word(),  # next word as literal
-            "REL": lambda: self.next_word() - 128,  # next word as signed integer
+            "REL": self.addr_relative,  # next word as signed integer
             "ABS": lambda: self.next_two(),  # get next 16 bits as address
             "ZP": lambda: self.ram.get(self.next_word()),  # get next 8 bits as address for zeroth memory page
             "ABS_X": lambda: self.ram.get((self.next_two() + self.reg.X) & 0xffff),  # as with ABS but add X to address
@@ -499,6 +499,10 @@ class CPU:
         zp = (self.next_word + add_to_index) & 0xff
         address = (((self.ram.get(zp) << 8) | (self.ram.get(zp + 1))) + add_to_address) & 0xffff
         return self.ram.get(address)
+
+    def addr_relative(self):
+        relative_address = self.next_word()
+        return relative_address if relative_address < 128 else 256 - relative_address
 
     # Instructions
     def ADC(self, value):
