@@ -939,7 +939,7 @@ class CPU():
         Writes flags: D, V, C, N, Z
         """
         if self.reg.D:
-            result = bcd(self.reg.A) - bdc(value) - 1 if not self.reg.C else 0
+            result = bcd(self.reg.A) - bcd(value) - 1 if not self.reg.C else 0
             self.reg.V = result > 99 or result < 0
         else:
             result = self.reg.A - value - 1 if not self.reg.C else 0
