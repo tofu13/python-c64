@@ -131,7 +131,6 @@ class RegisterBank(object):
             return object.__setattr__(self, attr, value)
 
 
-# noinspection PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming
 class CPU:
     def __init__(self, initial_registers=None, initial_ram=None):
         # initial_registers must be a RegisterBank or a dict of values for RegisterBank()
@@ -447,6 +446,14 @@ class CPU:
         # Before we look for extra info like immediate values or memory addresses,
         # we need to look up the opcode to get its addressing type.
 
+        instruction, addressing_mode = self.OPCODES.get(opcode)
+        if addressing_mode is not None:
+            value = self.ADDRESSING_MODES.get(addressing_mode)()
+        else:
+            value = None
+
+        return instruction, value
+
     def next_word(self):
         word = self.ram.get(self.reg.PC)
         self.reg.PC += 1
@@ -462,6 +469,30 @@ class CPU:
     def pop(self):
         self.reg.SP += 1
         return self.ram.get(self.reg.SP)
+
+    def run(self, address):
+        self.reg.PC = address
+        print(self)
+        while True:
+            instruction, value = self.step()
+            if instruction == self.BRK :
+                print("Break encountered, stopping here.")
+                break
+
+            if value is None:
+                print(f"Executing {instruction.__name__}")
+                instruction()
+            elif value >255 :
+                print(f"Executing {instruction.__name__} {value:04X}")
+                instruction(value)
+            else:
+                print(f"Executing {instruction.__name__} {value:02X}")
+                instruction(value)
+
+            print(self)
+
+    def __str__(self):
+        return f"PC:${self.reg.PC:04X} A:${self.reg.A:02X} X:${self.reg.X:02X} Y:${self.reg.Y:02X} SP:${self.reg.SP:02X}"
 
     # Addressing modes
     def addr_indirect(self, add_to_index=0, add_to_address=0):
@@ -1042,3 +1073,7 @@ class CPU:
 
     def XAA(self):
         raise NotImplementedError()
+
+if __name__ == '__main__':
+    cpu = CPU(initial_ram=b"\xA2\x0F\x8A\x69\x30\xA9\x8D\xE8\xE0\x0A\xF0\x03\x4C\x02\x00")
+    cpu.run(0)
