@@ -1,11 +1,13 @@
 from enum import Enum
 from functools import partial
 
+
 def sanitize_value(value, word_length):
     if not isinstance(value, int):
         value = int(value)
-    value = value % 2**word_length
+    value = value % 2 ** word_length
     return value
+
 
 # binary codec decimal: translates an 8-bit value into a 2-digit decimal number
 def bcd(value):
@@ -14,7 +16,8 @@ def bcd(value):
     if ones >= 10 or tens >= 10:
         raise ValueError
     else:
-        return (tens*10) + ones
+        return (tens * 10) + ones
+
 
 class RAM(object):
     # initial_contents must be a list of words, and each word must fit into word_size. **This is not checked!**
@@ -38,6 +41,7 @@ class RAM(object):
         value = sanitize_value(value, self.word_length)
         self._contents[pos] = value
 
+
 class Register(object):
     def __init__(self, word_length, value=0):
         self.word_length = word_length
@@ -50,13 +54,15 @@ class Register(object):
     def set(self, value):
         self._value = sanitize_value(value, self.word_length)
 
+
 class ReadOnlyRegister(Register):
     def set(self, value):
         if self._value != sanitize_value(value, self.word_length):
             raise NotImplementedError("Can't write %s to read-only register bit; "
                                       "are you trying to write an invalid value to e.g. SP?" % value)
         else:
-            pass # Silently do nothing if no bits would change anyways
+            pass  # Silently do nothing if no bits would change anyways
+
 
 class CompositeRegister(Register):
     def __init__(self, components):
@@ -77,21 +83,22 @@ class CompositeRegister(Register):
     @_value.setter
     def _value(self, value):
         value = sanitize_value(value, self.word_length)
-        pos = 0 # position counter from most to least significant bit
+        pos = 0  # position counter from most to least significant bit
         for component in self.components:
             shift_by = self.word_length - pos - component.word_length
             component.set(value >> shift_by)
             pos += component.word_length
 
+
 class RegisterBank(object):
     # includes PC and other utility banks as registers
 
     _regs = (('A', 8), ('Y', 8), ('X', 8), ('PCH', 8), ('PCL', 8), ('S', 8),
-            ('N', 1), ('V', 1), ('B', 1), ('D', 1), ('I', 1), ('Z', 1), ('C', 1))
+             ('N', 1), ('V', 1), ('B', 1), ('D', 1), ('I', 1), ('Z', 1), ('C', 1))
 
     _composite_regs = (('PC', ['PCH', 'PCL']),
-                      ('SP', [ReadOnlyRegister(1, value=1), 'S']),
-                      ('P', ['N', 'V', ReadOnlyRegister(1), 'B', 'D', 'I', 'Z', 'C']))
+                       ('SP', [ReadOnlyRegister(1, value=1), 'S']),
+                       ('P', ['N', 'V', ReadOnlyRegister(1), 'B', 'D', 'I', 'Z', 'C']))
 
     def __init__(self, values=None):
         regs = {}
@@ -123,7 +130,9 @@ class RegisterBank(object):
         else:
             return object.__setattr__(self, attr, value)
 
-class CPU():
+
+# noinspection PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming,PyPep8Naming
+class CPU:
     def __init__(self, initial_registers=None, initial_ram=None):
         # initial_registers must be a RegisterBank or a dict of values for RegisterBank()
         # initial_ram must be a RAM object or a list of contents
@@ -141,56 +150,56 @@ class CPU():
         # These need to be bound to self, so they're defined in the constructor
         self.ADDRESSING_MODES = {
             None: lambda: None,
-            "A": lambda: self.reg.A, # contents of A
-            "IMM": lambda: self.next_word(), # next word as literal
-            "REL": lambda: self.next_word() - 128, #  next word as signed integer
-            "ABS": lambda: self.ram.get(self.next_two()), # get next 16 bits as address
-            "ZP": lambda: self.ram.get(self.next_word()), # get next 8 bits as address for zeroth memory page
-            "ABS_X": lambda: self.ram.get((self.next_two() + self.reg.X) & 0xffff), # as with ABS but add X to address
-            "ABS_Y": lambda: self.ram.get((self.next_two() + self.reg.Y) & 0xffff), # as with ABS but add Y to address
-            "ZP_X": lambda: self.ram.get((self.next_word() + self.reg.X) & 0xff), # as with ZP but add X to address
-            "ZP_Y": lambda: self.ram.get((self.next_word() + self.reg.Y) & 0xff), # as with ZP but add Y to address
-            "IND": self.addr_indirect, # Use next word as zero-page addr and the following byte from that zero page
-                                            # as another 8 bits, and combine the two into a 16-bit address
-            "IND_X": lambda: self.addr_indirect(add_to_index=self.reg.X), # As with the above, but add X to the ZP
-            "IND_Y": lambda: self.addr_indirect(add_to_address=self.reg.Y), # As with the above, but add Y to the
-                                                                            # resulting address (not the same as IND_X!)
+            "A": lambda: self.reg.A,  # contents of A
+            "IMM": lambda: self.next_word(),  # next word as literal
+            "REL": lambda: self.next_word() - 128,  # next word as signed integer
+            "ABS": lambda: self.ram.get(self.next_two()),  # get next 16 bits as address
+            "ZP": lambda: self.ram.get(self.next_word()),  # get next 8 bits as address for zeroth memory page
+            "ABS_X": lambda: self.ram.get((self.next_two() + self.reg.X) & 0xffff),  # as with ABS but add X to address
+            "ABS_Y": lambda: self.ram.get((self.next_two() + self.reg.Y) & 0xffff),  # as with ABS but add Y to address
+            "ZP_X": lambda: self.ram.get((self.next_word() + self.reg.X) & 0xff),  # as with ZP but add X to address
+            "ZP_Y": lambda: self.ram.get((self.next_word() + self.reg.Y) & 0xff),  # as with ZP but add Y to address
+            "IND": self.addr_indirect,  # Use next word as zero-page addr and the following byte from that zero page
+            # as another 8 bits, and combine the two into a 16-bit address
+            "IND_X": lambda: self.addr_indirect(add_to_index=self.reg.X),  # As with the above, but add X to the ZP
+            "IND_Y": lambda: self.addr_indirect(add_to_address=self.reg.Y),  # As with the above, but add Y to the
+            # resulting address (not the same as IND_X!)
         }
 
         self.OPCODES = {
             0x00: (self.BRK, None),
             0x01: (self.ORA, "IND_X"),
             0x02: None,
-            0x03: None, #(self.SLO, "IND_X"),
+            0x03: None,  # (self.SLO, "IND_X"),
             0x04: (self.NOP, "ZP"),
             0x05: (self.ORA, "ZP"),
             0x06: (self.ASL, "ZP"),
-            0x07: None, #(self.SLO, "ZP"),
+            0x07: None,  # (self.SLO, "ZP"),
             0x08: (self.PHP, None),
             0x09: (self.ORA, "IMM"),
             0x0a: (self.ASL, None),
-            0x0b: None, #(self.ANC, "IMM"),
+            0x0b: None,  # (self.ANC, "IMM"),
             0x0c: (self.NOP, "ABS"),
             0x0d: (self.ORA, "ABS"),
             0x0e: (self.ASL, "ABS"),
-            0x0f: None, #(self.SLO, "ABS"),
+            0x0f: None,  # (self.SLO, "ABS"),
 
             0x10: (self.BPL, "REL"),
             0x11: (self.ORA, "IND_Y"),
             0x12: None,
-            0x13: None, #(self.SLO, "IND_Y"),
+            0x13: None,  # (self.SLO, "IND_Y"),
             0x14: (self.NOP, "ZP_X"),
             0x15: (self.ORA, "ZP_X"),
             0x16: (self.ASL, "ZP_X"),
-            0x17: None, #(self.SLO, "ZP_X"),
+            0x17: None,  # (self.SLO, "ZP_X"),
             0x18: (self.CLC, None),
             0x19: (self.ORA, "ABS_Y"),
             0x1a: (self.NOP, None),
-            0x1b: None, #(self.SLO, "ABS_Y"),
+            0x1b: None,  # (self.SLO, "ABS_Y"),
             0x1c: (self.NOP, "ABS_X"),
             0x1d: (self.ORA, "ABS_X"),
             0x1e: (self.ASL, "ABS_X"),
-            0x1f: None, #(self.SLO, "ABS_X"),
+            0x1f: None,  # (self.SLO, "ABS_X"),
 
             0x20: (self.JSR, "ABS"),
             0x21: (self.AND, "IND_X"),
@@ -438,14 +447,12 @@ class CPU():
         # Before we look for extra info like immediate values or memory addresses,
         # we need to look up the opcode to get its addressing type.
 
-        
-
     def next_word(self):
         word = self.ram.get(self.reg.PC)
         self.reg.PC += 1
         return word
 
-    def next_two(self): # like next_word except gets two words as a 16-bit value
+    def next_two(self):  # like next_word except gets two words as a 16-bit value
         return (self.next_word() << 8) | self.next_word()
 
     def push(self, value):
@@ -459,7 +466,7 @@ class CPU():
     # Addressing modes
     def addr_indirect(self, add_to_index=0, add_to_address=0):
         zp = (self.next_word + add_to_index) & 0xff
-        address = (((self.ram.get(zp) << 8) | (self.ram.get(zp+1))) + add_to_address) & 0xffff
+        address = (((self.ram.get(zp) << 8) | (self.ram.get(zp + 1))) + add_to_address) & 0xffff
         return self.ram.get(address)
 
     # Instructions
@@ -545,7 +552,6 @@ class CPU():
         if self.reg.C:
             self.reg.PC += value
 
-
     def BEQ(self, value):
         """Branch (add value to PC) iff reg.Z is 1
 
@@ -615,7 +621,7 @@ class CPU():
         self.push(self.reg.PCH)
         self.push(self.reg.PCL)
         # write processor flags to the stack
-        self.push(self.reg.P | 0b00010000) # this logical OR forces the B flag set on write to stack only
+        self.push(self.reg.P | 0b00010000)  # this logical OR forces the B flag set on write to stack only
         # set PC from the 16 bytes at 0xfffe and 0xffff
         self.reg.PC = self.ram.get(0xffff) | (self.ram.get(0xfffe) << 8)
 
@@ -783,7 +789,7 @@ class CPU():
 
         Push PC-1 (the location of the JSR call itself) to the stack, then set PC
         """
-        self.reg.PC -= 1 # no problem mutating state here since it's about to be overwritten
+        self.reg.PC -= 1  # no problem mutating state here since it's about to be overwritten
         self.push(self.reg.PCH)
         self.push(self.reg.PCL)
         self.reg.PC = value
@@ -828,7 +834,7 @@ class CPU():
         """
         self.reg.N = 0
         self.reg.C = value & 0b1
-        result = value >> 1 & 0b01111111 # logical AND to cover case where > 8-bit value is specified
+        result = value >> 1 & 0b01111111  # logical AND to cover case where > 8-bit value is specified
         self.reg.Z = result == 0
         return result
 

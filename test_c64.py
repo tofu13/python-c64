@@ -1,9 +1,11 @@
 import c64
 import pytest
 
+
 @pytest.fixture
 def cpu():
     return c64.CPU()
+
 
 def test_register():
     reg = c64.Register(word_length=8, value=0xf0)
@@ -15,14 +17,16 @@ def test_register():
     reg.set(-1)
     assert reg.get() == 0xff
 
+
 def test_readonly_register():
     ro_reg = c64.ReadOnlyRegister(word_length=1, value=1)
     assert ro_reg.get() == 1
-    ro_reg.set(1) # this shouldn't fail
+    ro_reg.set(1)  # this shouldn't fail
     assert ro_reg.get() == 1
     with pytest.raises(NotImplementedError):
         ro_reg.set(0)
     assert ro_reg.get() == 1
+
 
 def test_composite_register():
     ro_reg = c64.ReadOnlyRegister(word_length=1, value=1)
@@ -47,6 +51,7 @@ def test_composite_register():
     assert reg_a.get() == 0xff
     assert reg_b.get() == 0xff
 
+
 def test_blank_register_bank():
     regbank = c64.RegisterBank()
     for name, _ in regbank._regs:
@@ -66,12 +71,13 @@ def test_blank_register_bank():
     assert regbank.S == 0xab
     for name, word_length in regbank._regs:
         assert getattr(regbank, '_' + name).word_length == word_length
-        setattr(regbank, name, int('1'*(word_length+1), base=2))
-        assert getattr(regbank, name) == int('1'*(word_length), base=2)
+        setattr(regbank, name, int('1' * (word_length + 1), base=2))
+        assert getattr(regbank, name) == int('1' * word_length, base=2)
     with pytest.raises(AttributeError):
         regbank._NOT_A_REAL_REGISTER
     with pytest.raises(AttributeError):
         regbank.NOT_A_REAL_REGISTER
+
 
 def test_default_value_register_bank():
     with pytest.raises(AttributeError):
@@ -91,6 +97,7 @@ def test_default_value_register_bank():
     assert regbank.S == 0x23
     assert regbank.SP == 0x123
 
+
 def test_blank_ram():
     ram = c64.RAM(8, 0xffff)
     assert ram.word_length == 8
@@ -101,6 +108,7 @@ def test_blank_ram():
     assert ram.get(0x2000) == 0xfb
     with pytest.raises(ValueError):
         ram.set(0x1ffff, 1)
+
 
 def test_initial_contents_ram():
     ram = c64.RAM(8, 0xffff, initial_contents=[0xff, 0x01, 0x02, 0x03])
@@ -113,6 +121,7 @@ def test_initial_contents_ram():
     ram.set(3, 0x06)
     assert ram.get(3) == 0x06
 
+
 def test_cpu_init():
     cpu = c64.CPU()
     assert cpu.reg.PC == 0
@@ -120,6 +129,7 @@ def test_cpu_init():
     assert cpu.ram.size == 0x10000
     assert cpu.ram.word_length == 8
     assert cpu.ram.get(0) == 0
+
 
 def test_cpu_init_with_defaults():
     cpu = c64.CPU(initial_registers={'PC': 0x1234}, initial_ram=[0xff, 0x02])
@@ -129,6 +139,7 @@ def test_cpu_init_with_defaults():
     assert cpu.ram.word_length == 8
     assert cpu.ram.get(0) == 0xff
     assert cpu.ram.get(1) == 0x02
+
 
 def test_cpu_init_with_initialized_defaults():
     ram = c64.RAM(8, 0xffff, initial_contents=[0xff, 0x01, 0x02, 0x03])
@@ -145,6 +156,7 @@ def test_cpu_init_with_initialized_defaults():
     assert cpu.ram.get(2) == 0x02
     assert cpu.ram.get(3) == 0x03
 
+
 def test_next_word():
     cpu = c64.CPU(initial_ram=[0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0xff])
     cpu.reg.PC = 0x0002
@@ -160,20 +172,25 @@ def test_next_word():
     assert cpu.next_word() == 0x02
     assert cpu.reg.PC == 0x0003
 
+
 def test_bcd():
     assert c64.bcd(0x43) == 43
     assert c64.bcd(0x12) == 12
     with pytest.raises(ValueError):
         c64.bcd(0xfa)
 
+
 # TODO: refactor ADC, AND, ASL to use parametrization if appropriate
 
+# noinspection PyPep8Naming,PyPep8Naming
 def test_ADC(cpu):
     cpu.reg.A = 0x02
     cpu.ADC(0x04)
     assert cpu.reg.A == 0x06
     assert cpu.reg.P == 0b00000000
 
+
+# noinspection PyPep8Naming
 def test_ADC_with_carry_and_sign(cpu):
     cpu.reg.C = 1
     cpu.reg.A = 0xf2
@@ -182,6 +199,8 @@ def test_ADC_with_carry_and_sign(cpu):
     assert cpu.reg.N == 0x01
     assert cpu.reg.P == 0b10000000
 
+
+# noinspection PyPep8Naming
 def test_ADC_overflow(cpu):
     cpu.reg.A = 0xf2
     cpu.ADC(0x14)
@@ -191,12 +210,16 @@ def test_ADC_overflow(cpu):
     assert cpu.reg.N == 0x01
     assert cpu.reg.P == 0b11000001
 
+
+# noinspection PyPep8Naming
 def test_ADC_zero(cpu):
     cpu.ADC(0x00)
     assert cpu.reg.A == 0x00
     assert cpu.reg.Z == 0x01
     assert cpu.reg.P == 0b00000010
 
+
+# noinspection PyPep8Naming
 def test_AND_with_sign(cpu):
     cpu.reg.A = 0b10111111
     cpu.AND(0b11001111)
@@ -204,24 +227,32 @@ def test_AND_with_sign(cpu):
     assert cpu.reg.N == 0x01
     assert cpu.reg.P == 0b10000000
 
+
+# noinspection PyPep8Naming
 def test_AND_zero(cpu):
     cpu.AND(0x12)
     assert cpu.reg.A == 0x00
     assert cpu.reg.Z == 0x01
     assert cpu.reg.P == 0b00000010
 
+
+# noinspection PyPep8Naming
 def test_ASL(cpu):
     assert cpu.ASL(0b11111110) == 0b11111100
     assert cpu.reg.C == 1
     assert cpu.reg.N == 1
     assert cpu.reg.P == 0b10000001
 
+
+# noinspection PyPep8Naming
 def test_ASL_zero(cpu):
     assert cpu.ASL(0b10000000) == 0b00000000
     assert cpu.reg.Z == 1
     assert cpu.reg.C == 1
     assert cpu.reg.P == 0b00000011
 
+
+# noinspection PyPep8Naming
 @pytest.mark.parametrize("pc, c, value, exp_pc, exp_p", [
     (0x0002, 1, 2, 0x0002, 0b00000001),
     (0x0002, 0, 2, 0x0004, 0b00000000),
@@ -234,6 +265,8 @@ def test_BCC(cpu, pc, c, value, exp_pc, exp_p):
     assert cpu.reg.PC == exp_pc
     assert cpu.reg.P == exp_p
 
+
+# noinspection PyPep8Naming
 @pytest.mark.parametrize("pc, c, value, exp_pc, exp_p", [
     (0x0002, 0, 2, 0x0002, 0b00000000),
     (0x0002, 1, 2, 0x0004, 0b00000001),
@@ -246,6 +279,8 @@ def test_BCS(cpu, pc, c, value, exp_pc, exp_p):
     assert cpu.reg.PC == exp_pc
     assert cpu.reg.P == exp_p
 
+
+# noinspection PyPep8Naming
 @pytest.mark.parametrize("pc, z, value, exp_pc, exp_p", [
     (0x0002, 0, 2, 0x0002, 0b00000000),
     (0x0002, 1, 2, 0x0004, 0b00000010),
@@ -258,6 +293,8 @@ def test_BEQ(cpu, pc, z, value, exp_pc, exp_p):
     assert cpu.reg.PC == exp_pc
     assert cpu.reg.P == exp_p
 
+
+# noinspection PyPep8Naming
 @pytest.mark.parametrize("a, value, exp_p", [
     (0b00000000, 0b11111111, 0b00000010),
     (0b11111111, 0b11111111, 0b11000000),
@@ -268,8 +305,10 @@ def test_BIT(cpu, a, value, exp_p):
     cpu.reg.A = a
     cpu.BIT(value)
     assert cpu.reg.P == exp_p
-    assert cpu.reg.A == a # hasn't changed
+    assert cpu.reg.A == a  # hasn't changed
 
+
+# noinspection PyPep8Naming
 @pytest.mark.parametrize("pc, n, value, exp_pc, exp_p", [
     (0x0002, 0, 2, 0x0002, 0b00000000),
     (0x0002, 1, 2, 0x0004, 0b10000000),
@@ -282,6 +321,8 @@ def test_BMI(cpu, pc, n, value, exp_pc, exp_p):
     assert cpu.reg.PC == exp_pc
     assert cpu.reg.P == exp_p
 
+
+# noinspection PyPep8Naming
 @pytest.mark.parametrize("pc, z, value, exp_pc, exp_p", [
     (0x0002, 1, 2, 0x0002, 0b00000010),
     (0x0002, 0, 2, 0x0004, 0b00000000),
@@ -294,6 +335,8 @@ def test_BNE(cpu, pc, z, value, exp_pc, exp_p):
     assert cpu.reg.PC == exp_pc
     assert cpu.reg.P == exp_p
 
+
+# noinspection PyPep8Naming
 @pytest.mark.parametrize("pc, n, value, exp_pc, exp_p", [
     (0x0002, 1, 2, 0x0002, 0b10000000),
     (0x0002, 0, 2, 0x0004, 0b00000000),
@@ -306,11 +349,13 @@ def test_BPL(cpu, pc, n, value, exp_pc, exp_p):
     assert cpu.reg.PC == exp_pc
     assert cpu.reg.P == exp_p
 
+
+# noinspection PyPep8Naming
 @pytest.mark.parametrize("pc, destination_pc, sp, p", [
     (0x1234, 0x00ff, 0x1aa, 0b11000001),
     (0x5234, 0x12dd, 0x1bb, 0b00001000),
     (0x6234, 0x44cc, 0x1cc, 0b00000000),
-    (0x0000, 0x00aa, 0x1dd, 0b00010000), # This is only an assumption of what the c64 would do if B = 1
+    (0x0000, 0x00aa, 0x1dd, 0b00010000),  # This is only an assumption of what the c64 would do if B = 1
 ])
 def test_BRK(cpu, pc, destination_pc, sp, p):
     cpu.reg.PC = pc
@@ -323,9 +368,11 @@ def test_BRK(cpu, pc, destination_pc, sp, p):
     assert cpu.reg.SP == sp - 3
     assert cpu.reg.P == p
     assert cpu.ram.get(sp) == (pc + 1) >> 8
-    assert cpu.ram.get(sp-1) == (pc + 1) & 0xff
-    assert cpu.ram.get(sp-2) == p | 0b00010000 # is B flag set in the stack's copy of P?
+    assert cpu.ram.get(sp - 1) == (pc + 1) & 0xff
+    assert cpu.ram.get(sp - 2) == p | 0b00010000  # is B flag set in the stack's copy of P?
 
+
+# noinspection PyPep8Naming
 @pytest.mark.parametrize("pc, v, value, exp_pc, exp_p", [
     (0x0002, 1, 2, 0x0002, 0b01000000),
     (0x0002, 0, 2, 0x0004, 0b00000000),
@@ -338,6 +385,8 @@ def test_BVC(cpu, pc, v, value, exp_pc, exp_p):
     assert cpu.reg.PC == exp_pc
     assert cpu.reg.P == exp_p
 
+
+# noinspection PyPep8Naming
 @pytest.mark.parametrize("pc, v, value, exp_pc, exp_p", [
     (0x0002, 0, 2, 0x0002, 0b00000000),
     (0x0002, 1, 2, 0x0004, 0b01000000),
@@ -350,6 +399,7 @@ def test_BVS(cpu, pc, v, value, exp_pc, exp_p):
     assert cpu.reg.PC == exp_pc
     assert cpu.reg.P == exp_p
 
+
 @pytest.mark.parametrize("flag", ['C', 'D', 'I', 'V'])
 def test_clear_commands(cpu, flag):
     getattr(cpu, "CL" + flag)()
@@ -357,6 +407,7 @@ def test_clear_commands(cpu, flag):
     setattr(cpu.reg, flag, 1)
     getattr(cpu, "CL" + flag)()
     assert cpu.reg.P == 0b00000000
+
 
 @pytest.mark.parametrize("command, target", [
     ('CMP', 'A'),
@@ -374,6 +425,8 @@ def test_compare_commands(cpu, command, target, state, value, exp_p):
     getattr(cpu, command)(value)
     assert cpu.reg.P == exp_p
 
+
+# noinspection PyPep8Naming
 @pytest.mark.parametrize("command, value, exp_p", [
     ('DEC', 0x01, 0b00000010),
     ('DEC', 0xfb, 0b10000000),
@@ -388,6 +441,8 @@ def test_DEC_INC(cpu, command, value, exp_p):
     assert getattr(cpu, command)(value) == expected_value
     assert cpu.reg.P == exp_p
 
+
+# noinspection PyPep8Naming
 @pytest.mark.parametrize("command, value, exp_p", [
     ('DEX', 0x02, 0b00000000),
     ('DEY', 0x02, 0b00000000),
@@ -410,6 +465,8 @@ def test_DEX_DEY_INX_INY(cpu, command, value, exp_p):
     assert getattr(cpu.reg, command[2]) == (value + (1 if command.startswith("IN") else -1)) & 0xff
     assert cpu.reg.P == exp_p
 
+
+# noinspection PyPep8Naming
 @pytest.mark.parametrize("a, value, exp_a, exp_p", [
     (0b00000000, 0b00000000, 0b00000000, 0b00000010),
     (0b00001000, 0b00000000, 0b00001000, 0b00000000),
@@ -421,20 +478,26 @@ def test_EOR(cpu, a, value, exp_a, exp_p):
     assert cpu.reg.A == exp_a
     assert cpu.reg.P == exp_p
 
+
+# noinspection PyPep8Naming
 def test_JMP(cpu):
     cpu.reg.PC = 0x00ff
     cpu.JMP(0x00aa)
     assert cpu.reg.PC == 0x00aa
 
+
+# noinspection PyPep8Naming
 def test_JSR(cpu):
     cpu.reg.PC = 0x02ff
     cpu.reg.SP = 0x1cc
     cpu.JSR(0x00aa)
     assert cpu.ram.get(0x1cc) == 0x02
-    assert cpu.ram.get(0x1cc-1) == 0xff-1
-    assert cpu.reg.SP == 0x1cc-2
+    assert cpu.ram.get(0x1cc - 1) == 0xff - 1
+    assert cpu.reg.SP == 0x1cc - 2
     assert cpu.reg.PC == 0x00aa
 
+
+# noinspection PyPep8Naming
 @pytest.mark.parametrize("target", ["A", "X", "Y"])
 @pytest.mark.parametrize("value, exp_p", [
     (0x14, 0b00000000),
@@ -447,6 +510,8 @@ def test_LDA_LDX_LDY(cpu, target, value, exp_p):
     assert getattr(cpu.reg, target) == value
     assert cpu.reg.P == exp_p
 
+
+# noinspection PyPep8Naming
 @pytest.mark.parametrize("value, exp_result, exp_p", [
     (0b10101010, 0b01010101, 0b00000000),
     (0b01010101, 0b00101010, 0b00000001),
@@ -457,6 +522,8 @@ def test_LSR(cpu, value, exp_result, exp_p):
     assert cpu.LSR(value) == exp_result
     assert cpu.reg.P == exp_p
 
+
+# noinspection PyPep8Naming
 def test_NOP(cpu):
     exp_p = cpu.reg.P
     cpu.NOP()
